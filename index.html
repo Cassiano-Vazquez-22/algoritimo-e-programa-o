@@ -22,7 +22,7 @@
     <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-5 mb-5">
       <div>
         <div class="flex items-center gap-3">
-          <span class="text-3xl"></span>
+          <span class="text-3xl">📅</span>
           <h1 class="text-2xl font-black text-slate-900 tracking-tight">Meu Cronograma de Rotina</h1>
         </div>
         <p class="text-sm text-slate-500 mt-1">Organize sua rotina dia a dia com alertas visuais integrados.</p>
@@ -63,4 +63,244 @@
           <tr class="text-slate-400 text-xs uppercase tracking-wider border-b">
             <th class="py-3 px-3 w-12 text-center">Alerta</th>
             <th class="py-3 px-3 w-36">Horário</th>
-            <th class="py-
+            <th class="py-3 px-3">Atividade / Descrição</th>
+            <th class="py-3 px-3 w-36">Categoria</th>
+            <th class="py-3 px-3 w-36">Prioridade</th>
+            <th class="py-3 px-3 w-12 text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista-rotina" class="divide-y divide-slate-100">
+          <!-- Linhas renderizadas via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="mt-6 pt-4 border-t text-center text-xs text-slate-400">
+      💡 As alterações de cada dia são salvas de forma independente no navegador.
+    </footer>
+
+  </div>
+
+  <script>
+    const CHAVE_STORAGE = 'rotina_cronograma_semanal_v3';
+
+    const DIAS = [
+      { id: 'seg', label: 'Segunda' },
+      { id: 'ter', label: 'Terça' },
+      { id: 'qua', label: 'Quarta' },
+      { id: 'qui', label: 'Quinta' },
+      { id: 'sex', label: 'Sexta' },
+      { id: 'sab', label: 'Sábado' },
+      { id: 'dom', label: 'Domingo' }
+    ];
+
+    const rotinaPadraoSemanal = {
+      seg: [
+        { id: 1, horario: '07:00 - 07:30', atividade: 'Alongamento & Café', categoria: 'Saúde', prioridade: 'normal' },
+        { id: 2, horario: '08:00 - 12:00', atividade: 'Bloco de Foco: Trabalho', categoria: 'Produtividade', prioridade: 'urgente' },
+        { id: 3, horario: '12:00 - 13:00', atividade: 'Almoço & Descanso', categoria: 'Pausa', prioridade: 'normal' }
+      ],
+      ter: [
+        { id: 4, horario: '08:30 - 11:30', atividade: 'Reuniões e Planejamento', categoria: 'Produtividade', prioridade: 'atencao' }
+      ],
+      qua: [],
+      qui: [],
+      sex: [
+        { id: 5, horario: '16:00 - 17:00', atividade: 'Revisão da Semana', categoria: 'Produtividade', prioridade: 'normal' }
+      ],
+      sab: [
+        { id: 6, horario: '09:00 - 10:30', atividade: 'Atividade Física / Lazer', categoria: 'Saúde', prioridade: 'normal' }
+      ],
+      dom: []
+    };
+
+    let cronograma = JSON.parse(localStorage.getItem(CHAVE_STORAGE)) || rotinaPadraoSemanal;
+    let diaSelecionado = 'seg';
+
+    function salvar() {
+      localStorage.setItem(CHAVE_STORAGE, JSON.stringify(cronograma));
+      atualizarContadores();
+    }
+
+    function renderizarAbas() {
+      const containerAbas = document.getElementById('abas-dias');
+      containerAbas.innerHTML = '';
+
+      DIAS.forEach(dia => {
+        const total = (cronograma[dia.id] || []).length;
+        const ativa = dia.id === diaSelecionado;
+        
+        const btn = document.createElement('button');
+        btn.onclick = () => mudarDia(dia.id);
+        btn.className = `px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 ${
+          ativa 
+            ? 'bg-indigo-600 text-white shadow-sm font-semibold' 
+            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+        }`;
+        
+        btn.innerHTML = `
+          <span>${dia.label}</span>
+          <span class="text-xs px-1.5 py-0.2 rounded-full ${
+            ativa ? 'bg-indigo-800 text-white' : 'bg-slate-300 text-slate-700'
+          }">${total}</span>
+        `;
+        
+        containerAbas.appendChild(btn);
+      });
+    }
+
+    function mudarDia(diaId) {
+      diaSelecionado = diaId;
+      renderizarAbas();
+      renderizarTabela();
+    }
+
+    function atualizarContadores() {
+      const itensDoDia = cronograma[diaSelecionado] || [];
+      const normal = itensDoDia.filter(i => i.prioridade === 'normal').length;
+      const atencao = itensDoDia.filter(i => i.prioridade === 'atencao').length;
+      const urgente = itensDoDia.filter(i => i.prioridade === 'urgente').length;
+
+      document.getElementById('contador-normal').innerText = normal;
+      document.getElementById('contador-atencao').innerText = atencao;
+      document.getElementById('contador-urgente').innerText = urgente;
+    }
+
+    function obterEstiloPrioridade(prioridade) {
+      switch (prioridade) {
+        case 'atencao':
+          return {
+            bgRow: 'hover:bg-amber-50/50 bg-amber-50/20',
+            selectClass: 'bg-amber-100 text-amber-800 border-amber-300',
+            alertaVisual: '🟠'
+          };
+        case 'urgente':
+          return {
+            bgRow: 'hover:bg-rose-50/50 bg-rose-50/20 animar-urgente',
+            selectClass: 'bg-rose-100 text-rose-800 border-rose-300 font-bold',
+            alertaVisual: '🔴'
+          };
+        default:
+          return {
+            bgRow: 'hover:bg-slate-50/80',
+            selectClass: 'bg-slate-100 text-slate-700 border-slate-300',
+            alertaVisual: '🟢'
+          };
+      }
+    }
+
+    function renderizarTabela() {
+      const container = document.getElementById('lista-rotina');
+      container.innerHTML = '';
+      const itensDoDia = cronograma[diaSelecionado] || [];
+
+      if (itensDoDia.length === 0) {
+        container.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400 text-sm">
+              Nenhuma atividade cadastrada para este dia. Clique em "+ Novo Horário" para planejar.
+            </td>
+          </tr>
+        `;
+        atualizarContadores();
+        return;
+      }
+
+      itensDoDia.forEach((item, index) => {
+        const estilos = obterEstiloPrioridade(item.prioridade);
+        const tr = document.createElement('tr');
+        tr.className = `${estilos.bgRow} transition-all duration-150 border-b border-slate-100`;
+
+        tr.innerHTML = `
+          <td class="py-3 px-3 text-center align-middle text-lg">
+            <span>${estilos.alertaVisual}</span>
+          </td>
+          <td class="py-3 px-3 align-middle">
+            <input 
+              type="text" 
+              value="${item.horario}" 
+              onchange="atualizarCampo(${index}, 'horario', this.value)"
+              class="w-full font-bold text-slate-700 bg-transparent hover:bg-white focus:bg-white focus:ring-2 focus:ring-indigo-500 rounded-lg px-2 py-1 border border-transparent hover:border-slate-200 transition"
+            />
+          </td>
+          <td class="py-3 px-3 align-middle">
+            <input 
+              type="text" 
+              value="${item.atividade}" 
+              onchange="atualizarCampo(${index}, 'atividade', this.value)"
+              class="w-full text-slate-800 bg-transparent hover:bg-white focus:bg-white focus:ring-2 focus:ring-indigo-500 rounded-lg px-2 py-1 border border-transparent hover:border-slate-200 transition"
+            />
+          </td>
+          <td class="py-3 px-3 align-middle">
+            <input 
+              type="text" 
+              value="${item.categoria}" 
+              onchange="atualizarCampo(${index}, 'categoria', this.value)"
+              class="w-full text-xs bg-slate-100 hover:bg-white focus:bg-white focus:ring-2 focus:ring-indigo-500 rounded-full px-3 py-1 font-semibold text-slate-600 border border-transparent hover:border-slate-200 transition text-center"
+            />
+          </td>
+          <td class="py-3 px-3 align-middle">
+            <select 
+              onchange="atualizarCampo(${index}, 'prioridade', this.value); renderizarTabela();"
+              class="w-full text-xs font-semibold rounded-lg px-2 py-1.5 border focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${estilos.selectClass}"
+            >
+              <option value="normal" ${item.prioridade === 'normal' ? 'selected' : ''}>🟢 Normal</option>
+              <option value="atencao" ${item.prioridade === 'atencao' ? 'selected' : ''}>🟠 Atenção</option>
+              <option value="urgente" ${item.prioridade === 'urgente' ? 'selected' : ''}>🔴 Urgente 🔥</option>
+            </select>
+          </td>
+          <td class="py-3 px-3 align-middle text-center">
+            <button 
+              onclick="removerItem(${index})" 
+              title="Excluir Horário"
+              class="text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg p-2 transition text-sm"
+            >
+              🗑️
+            </button>
+          </td>
+        `;
+
+        container.appendChild(tr);
+      });
+
+      atualizarContadores();
+    }
+
+    function adicionarItem() {
+      if (!cronograma[diaSelecionado]) {
+        cronograma[diaSelecionado] = [];
+      }
+
+      cronograma[diaSelecionado].push({
+        id: Date.now(),
+        horario: '12:00 - 13:00',
+        atividade: 'Nova Atividade',
+        categoria: 'Geral',
+        prioridade: 'normal'
+      });
+
+      salvar();
+      renderizarAbas();
+      renderizarTabela();
+    }
+
+    function atualizarCampo(index, campo, valor) {
+      cronograma[diaSelecionado][index][campo] = valor;
+      salvar();
+    }
+
+    function removerItem(index) {
+      if (confirm('Tem certeza que deseja excluir esta atividade?')) {
+        cronograma[diaSelecionado].splice(index, 1);
+        salvar();
+        renderizarAbas();
+        renderizarTabela();
+      }
+    }
+
+    // Inicialização
+    renderizarAbas();
+    renderizarTabela();
+  </script>
+</body>
+</html>
