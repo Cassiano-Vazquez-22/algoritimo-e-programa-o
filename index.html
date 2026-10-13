@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cronograma de Rotina</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-8">
+  <div class="max-w-4xl mx-auto bg-white shadow-md rounded-2xl p-6">
+    
+    <header class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900">Meu Cronograma de Rotina</h1>
+        <p class="text-sm text-slate-500">Clique em qualquer texto para editar. Os dados salvam automaticamente.</p>
+      </div>
+      <button 
+        onclick="adicionarItem()" 
+        class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition"
+      >
+        + Novo Horário
+      </button>
+    </header>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-left border-collapse">
+        <thead>
+          <tr class="text-slate-400 text-xs uppercase tracking-wider border-b">
+            <th class="py-3 px-3 w-32">Horário</th>
+            <th class="py-3 px-3">Atividade / Descrição</th>
+            <th class="py-3 px-3 w-40">Categoria</th>
+            <th class="py-3 px-3 w-16 text-center">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="lista-rotina" class="divide-y divide-slate-100">
+          <!-- Linhas renderizadas via JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    const CHAVE_STORAGE = 'rotina_cronograma_v1';
+
+    const rotinaPadrao = [
+      { id: 1, horario: '07:00 - 07:30', atividade: 'Alongamento & Café da manhã', categoria: 'Saúde' },
+      { id: 2, horario: '08:00 - 12:00', atividade: 'Bloco de Foco: Trabalho / Estudos', categoria: 'Produtividade' },
+      { id: 3, horario: '12:00 - 13:00', atividade: 'Almoço e descanso', categoria: 'Pausa' },
+      { id: 4, horario: '18:00 - 19:00', atividade: 'Exercício físico', categoria: 'Saúde' }
+    ];
+
+    let itens = JSON.parse(localStorage.getItem(CHAVE_STORAGE)) || rotinaPadrao;
+
+    function salvar() {
+      localStorage.setItem(CHAVE_STORAGE, JSON.stringify(itens));
+    }
+
+    function renderizar() {
+      const container = document.getElementById('lista-rotina');
+      container.innerHTML = '';
+
+      if (itens.length === 0) {
+        container.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-8 text-center text-slate-400 text-sm">
+              Nenhuma atividade cadastrada. Clique em "+ Novo Horário" para começar.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      itens.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50 transition';
+
+        tr.innerHTML = `
+          <td class="py-3 px-3 align-top">
+            <input 
+              type="text" 
+              value="${item.horario}" 
+              onchange="atualizarCampo(${index}, 'horario', this.value)"
+              class="w-full font-medium text-slate-700 bg-transparent focus:bg-white focus:outline-indigo-500 rounded px-1 py-0.5"
+            />
+          </td>
+          <td class="py-3 px-3 align-top">
+            <input 
+              type="text" 
+              value="${item.atividade}" 
+              onchange="atualizarCampo(${index}, 'atividade', this.value)"
+              class="w-full text-slate-800 bg-transparent focus:bg-white focus:outline-indigo-500 rounded px-1 py-0.5"
+            />
+          </td>
+          <td class="py-3 px-3 align-top">
+            <input 
+              type="text" 
+              value="${item.categoria}" 
+              onchange="atualizarCampo(${index}, 'categoria', this.value)"
+              class="w-full text-xs text-indigo-700 bg-indigo-50 focus:bg-white focus:outline-indigo-500 rounded px-2 py-1 font-semibold"
+            />
+          </td>
+          <td class="py-3 px-3 align-top text-center">
+            <button 
+              onclick="removerItem(${index})" 
+              title="Remover"
+              class="text-slate-300 hover:text-red-500 transition text-sm p-1"
+            >
+              ✕
+            </button>
+          </td>
+        `;
+
+        container.appendChild(tr);
+      });
+    }
+
+    function adicionarItem() {
+      itens.push({
+        id: Date.now(),
+        horario: '00:00',
+        atividade: 'Nova atividade',
+        categoria: 'Geral'
+      });
+      salvar();
+      renderizar();
+    }
+
+    function atualizarCampo(index, campo, valor) {
+      itens[index][campo] = valor;
+      salvar();
+    }
+
+    function removerItem(index) {
+      itens.splice(index, 1);
+      salvar();
+      renderizar();
+    }
+
+    renderizar();
+  </script>
+</body>
+</html>
